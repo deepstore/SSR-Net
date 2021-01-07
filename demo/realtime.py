@@ -7,16 +7,10 @@ import sys
 import timeit
 from moviepy.editor import *
 from keras import backend as K
-import time
 
-def draw_label(image, point, label, font=cv2.FONT_HERSHEY_SIMPLEX,
-               font_scale=1, thickness=2):
-    size = cv2.getTextSize(label, font, font_scale, thickness)[0]
-    x, y = point
-    cv2.rectangle(image, (x, y - size[1]), (x + size[0], y), (255, 0, 0), cv2.FILLED)
-    cv2.putText(image, label, point, font, font_scale, (255, 255, 255), thickness)
+model, model_gender = None
 
-def draw_results(detected,input_img,faces,ad,img_size,img_w,img_h,model,model_gender,time_detection,time_network,time_plot):
+def draw_results(detected,input_img,faces,ad,img_size,img_w,img_h):
     
     #for i, d in enumerate(detected):
     for i, (x,y,w,h) in enumerate(detected):
@@ -40,15 +34,14 @@ def draw_results(detected,input_img,faces,ad,img_size,img_w,img_h,model,model_ge
         cv2.rectangle(input_img, (xw1, yw1), (xw2, yw2), (0, 0, 255), 2)
         
     
+    start_time = timeit.default_timer()
     if len(detected) > 0:
         # predict ages and genders of the detected faces
         print("______PREDICT________")
-        start_time = time.time()
+        start_time = timeit.default_timer()
         predicted_ages = model.predict(faces)
         predicted_genders = model_gender.predict(faces)
-        elapsed_time = time.time() - start_time
-        print(elapsed_time*1000)
-        print("______DONE________")
+        
 
     # draw results
     for i, (x,y,w,h) in enumerate(detected):
@@ -65,14 +58,26 @@ def draw_results(detected,input_img,faces,ad,img_size,img_w,img_h,model,model_ge
 
         label = "{},{}".format(int(predicted_ages[i]),gender_str)
         
-        draw_label(input_img, (x1, y1), label)
+        print("label: ", label)
+        # draw_label(input_img, (x1, y1), label)
+    
+    elapsed_time = timeit.default_timer()-start_time
+    time_network = time_network + elapsed_time
     
     
+    
+    start_time = timeit.default_timer()
 
     #input_img = cv2.cvtColor(input_img, cv2.COLOR_BGR2RGB)
     cv2.imshow("result", input_img)
         
     
+    elapsed_time = timeit.default_timer()-start_time
+    time_plot = time_plot + elapsed_time
+
+    elapsed_time = timeit.default_timer()-start_time
+    print(elapsed_time*1000)
+    print("______DONE________")
 
     return input_img,time_network,time_plot
 
@@ -142,10 +147,10 @@ def main():
             input_img,time_network,time_plot = draw_results(detected,input_img,faces,ad,img_size,img_w,img_h,model,model_gender,time_detection,time_network,time_plot)
         
         #Show the time cost (fps)
-        # print('avefps_time_detection:',1/time_detection)
-        # print('avefps_time_network:',skip_frame/time_network)
-        # print('avefps_time_plot:',skip_frame/time_plot)
-        # print('===============================')
+        print('avefps_time_detection:',1/time_detection)
+        print('avefps_time_network:',skip_frame/time_network)
+        print('avefps_time_plot:',skip_frame/time_plot)
+        print('===============================')
         key = cv2.waitKey(1)
         
 
